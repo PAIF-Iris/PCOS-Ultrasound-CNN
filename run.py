@@ -64,11 +64,10 @@ base_model = ResNet50(weights='imagenet', include_top=False, input_shape=(224, 2
 for layer in base_model.layers:
     layer.trainable = False
 
-#adding custom layers on top of ResNet50
-x = base_model.output
-x = GlobalAveragePooling2D()(x)
-x = Dropout(0.3)(x)
-x = Dense(128, activation='relu')(x)
+#adding custom top layers on top of ResNet50
+x = base_model.output           #output of ResNet (7, 7, 2048)
+x = GlobalAveragePooling2D()(x)      #converts each feature map into a single number
+x = Dense(128, activation='relu')(x)        #
 x = Dropout(0.3)(x)
 preds = Dense(1, activation='sigmoid')(x)
 
@@ -83,7 +82,7 @@ callbacks = [
 ]
 
 #starts training
-history = model.fit(
+model.fit(
     train_gen,
     validation_data=val_gen,
     epochs=20,
@@ -93,4 +92,4 @@ history = model.fit(
 loss, acc = model.evaluate(test_gen)
 print(f"Test Accuracy: {acc:.4f}")
 
-model.save("resnet50_pcos_new_duplicate_remove_strategy.h5")
+model.save("resnet50_pcos_new_duplicate_remove_strategy.keras")
