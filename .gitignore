@@ -1,5 +1,5 @@
-.venv
+.venv/
 Dataset/Infected/
-Dataset/Non-Infected/
+Dataset/NonInfected/
 Dataset/no_duplicates/
 __pycache__/
