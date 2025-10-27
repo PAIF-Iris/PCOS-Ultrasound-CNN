@@ -21,69 +21,76 @@ from keras.callbacks import EarlyStopping, ModelCheckpoint
 # splitfolders.ratio(input_folder, output=output_folder, seed=42, ratio=(0.8, 0.1, 0.1))
 
 
-# base_dir = "/Users/paif_iris/Desktop/PCOS_CNN/Dataset/train_test_split"
-# train_dir = os.path.join(base_dir, "train")
-# val_dir   = os.path.join(base_dir, "val")
-# test_dir  = os.path.join(base_dir, "test")
+base_dir = "/Users/paif_iris/Desktop/PCOS_CNN/Dataset/train_test_split"
+train_dir = os.path.join(base_dir, "train")
+val_dir   = os.path.join(base_dir, "val")
+test_dir  = os.path.join(base_dir, "test")
 
-# img_size = (224, 224)
-# batch_size = 32
+img_size = (224, 224)
+batch_size = 32
 
-# train_datagen = ImageDataGenerator(
-#     rescale=1./255,           # Normalize pixel values to [0,1]
-#     rotation_range=15,        # Randomly rotate images ±15 degrees
-#     width_shift_range=0.1,    # Shift horizontally up to 10%
-#     height_shift_range=0.1,   # Shift vertically up to 10%
-#     shear_range=0.1,          # Apply slight shearing
-#     zoom_range=0.1,           # Zoom in/out randomly by ±10%
-#     horizontal_flip=True,     # Flip images horizontally (like mirror)
-#     fill_mode="nearest"       # Fill in missing pixels after transforms
-# )
-# val_datagen = ImageDataGenerator(rescale=1./255)
-# test_datagen = ImageDataGenerator(rescale=1./255)
-
-# train_gen = train_datagen.flow_from_directory(
-#     train_dir, target_size=img_size, batch_size=batch_size, class_mode='binary'
-# )
-
-# val_gen = val_datagen.flow_from_directory(
-#     val_dir, target_size=img_size, batch_size=batch_size, class_mode='binary'
-# )
-
-# test_gen = test_datagen.flow_from_directory(
-#     test_dir, target_size=img_size, batch_size=batch_size, class_mode='binary', shuffle=False
-# )
+#data augmentation and rescaling
+train_datagen = ImageDataGenerator(
+    rescale=1./255,          
+    rotation_range=15,       
+    width_shift_range=0.1,   
+    height_shift_range=0.1, 
+    shear_range=0.1,         
+    zoom_range=0.1,         
+    horizontal_flip=True,  
+    fill_mode="nearest"    
+)
+val_datagen = ImageDataGenerator(rescale=1./255)
+test_datagen = ImageDataGenerator(rescale=1./255)
 
 
+#creating batches of data from directories
+train_gen = train_datagen.flow_from_directory(
+    train_dir, target_size=img_size, batch_size=batch_size, class_mode='binary', shuffle=True, seed=42
+)
 
-# base_model = ResNet50(weights='imagenet', include_top=False, input_shape=(224, 224, 3))
-# for layer in base_model.layers:
-#     layer.trainable = False
+val_gen = val_datagen.flow_from_directory(
+    val_dir, target_size=img_size, batch_size=batch_size, class_mode='binary', shuffle=False, seed=42
+)
 
-# x = base_model.output
-# x = GlobalAveragePooling2D()(x)
-# x = Dropout(0.3)(x)
-# x = Dense(128, activation='relu')(x)
-# x = Dropout(0.3)(x)
-# preds = Dense(1, activation='sigmoid')(x)
+test_gen = test_datagen.flow_from_directory(
+    test_dir, target_size=img_size, batch_size=batch_size, class_mode='binary', shuffle=False, seed=42
+)
 
-# model = Model(inputs=base_model.input, outputs=preds)
-# model.compile(optimizer=Adam(learning_rate=1e-4), loss='binary_crossentropy', metrics=['accuracy'])
-# model.summary()
 
-# callbacks = [
-#     EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True),
-#     ModelCheckpoint('best_resnet50_pcos.h5', monitor='val_accuracy', save_best_only=True)
-# ]
+#define model
+base_model = ResNet50(weights='imagenet', include_top=False, input_shape=(224, 224, 3))   #transfer learning: using the pretrained imagenet
+#does not change the weights of ResNet50
+for layer in base_model.layers:
+    layer.trainable = False
 
-# history = model.fit(
-#     train_gen,
-#     validation_data=val_gen,
-#     epochs=20,
-#     callbacks=callbacks
-# )
+#adding custom layers on top of ResNet50
+x = base_model.output
+x = GlobalAveragePooling2D()(x)
+x = Dropout(0.3)(x)
+x = Dense(128, activation='relu')(x)
+x = Dropout(0.3)(x)
+preds = Dense(1, activation='sigmoid')(x)
 
-# loss, acc = model.evaluate(test_gen)
-# print(f"✅ Test Accuracy: {acc:.4f}")
+model = Model(inputs=base_model.input, outputs=preds)
+model.compile(optimizer=Adam(learning_rate=1e-4), loss='binary_crossentropy', metrics=['accuracy'])
+model.summary()
 
-# model.save("resnet50_pcos_final.h5")
+#silently monitors training progress, prevents overfitting by stopping early, and saves weights of the next best model
+callbacks = [
+    EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True),
+    ModelCheckpoint('best_resnet50_pcos.h5', monitor='val_accuracy', save_best_only=True)
+]
+
+#starts training
+history = model.fit(
+    train_gen,
+    validation_data=val_gen,
+    epochs=20,
+    callbacks=callbacks
+)
+
+loss, acc = model.evaluate(test_gen)
+print(f"Test Accuracy: {acc:.4f}")
+
+model.save("resnet50_pcos_new_duplicate_remove_strategy.h5")
