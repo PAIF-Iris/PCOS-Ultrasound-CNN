@@ -1,5 +1,3 @@
 .venv/
-Dataset/Infected/
-Dataset/NonInfected/
 Dataset/no_duplicates/
 functions/__pycache__/
