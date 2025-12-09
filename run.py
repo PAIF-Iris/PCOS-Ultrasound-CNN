@@ -62,7 +62,7 @@ test_gen = test_datagen.flow_from_directory(
 base_model = ResNet50(weights='imagenet', include_top=False, input_shape=(224, 224, 3))   #transfer learning: using the pretrained imagenet
 #does not change the weights of ResNet50
 for layer in base_model.layers:
-    layer.trainable = False
+    layer.trainable = True
 
 #adding custom top layers on top of ResNet50
 x = base_model.output           #output of ResNet (7, 7, 2048)
@@ -92,4 +92,4 @@ model.fit(
 loss, acc = model.evaluate(test_gen)
 print(f"Test Accuracy: {acc:.4f}")
 
-model.save("resnet50_pcos_new_duplicate_remove_strategy.keras")
+model.save("test.keras")
